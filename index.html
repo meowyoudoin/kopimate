@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Kopi Flow — Order</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <style>
+    :root{
+      --bg:#fbf6ee;
+      --accent:#d9a066;
+      --accent-dark:#b3834e;
+      --text:#2e221e;
+      --card:#fff;
+      --radius:14px;
+      --gap:12px;
+      --btn-pad:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      background:linear-gradient(180deg,var(--bg), #f4e9da);
+      color:var(--text);
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      padding:18px;
+      gap:18px;
+    }
+
+    /* container that fits nicely on phones */
+    .app{
+      width:100%;
+      max-width:480px;
+      display:flex;
+      flex-direction:column;
+      gap:var(--gap);
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .logo{
+      width:48px;height:48px;border-radius:10px;
+      background:var(--accent);
+      display:flex;align-items:center;justify-content:center;
+      color:white;font-weight:700;font-size:18px;
+      box-shadow:0 6px 14px rgba(0,0,0,0.08);
+    }
+    h1{margin:0;font-size:18px}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:0 6px 18px rgba(45,30,20,0.06);
+    }
+
+    label.small{font-size:12px; color:#6b554d}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .control{
+      flex:1 1 48%;
+    }
+
+    /* big tappable option buttons */
+    .options{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+    .opt{
+      flex:1 1 30%;
+      min-width:86px;
+      padding:12px;
+      border-radius:10px;
+      text-align:center;
+      background:#fff7ec;
+      border:1px solid rgba(0,0,0,0.03);
+      font-weight:600;
+      font-size:14px;
+      touch-action:manipulation;
+      user-select:none;
+    }
+    .opt.active{
+      background:var(--accent);
+      color:#fff;
+      box-shadow:0 6px 12px rgba(0,0,0,0.08);
+    }
+
+    input[type="text"]{
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,0.06);
+      font-size:15px;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      background:var(--accent);
+      color:white;
+      padding:var(--btn-pad);
+      border-radius:12px;
+      border:none;
+      font-weight:700;
+      font-size:16px;
+      flex:1 1 auto;
+      text-align:center;
+    }
+    .btn.secondary{
+      background:#fff;
+      color:var(--text);
+      border:1px solid rgba(0,0,0,0.06);
+    }
+
+    /* cart list */
+    #cartList{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+    #cartList li{
+      background:linear-gradient(180deg,#fff,#fffaf5);
+      padding:10px 12px;
+      border-radius:10px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      font-size:14px;
+      border:1px solid rgba(0,0,0,0.03);
+    }
+    .cart-meta{font-size:12px;color:#6b554d}
+
+    .tools{display:flex;gap:8px;margin-top:8px}
+    .tools button{padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,0.04);background:#fff;font-weight:600;flex:1}
+
+    /* wide screen adjustments */
+    @media(min-width:680px){
+      .row .control{flex-basis:48%}
+    }
+
+    /* bottom help */
+    .hint{font-size:12px;color:#6b554d;text-align:center;padding:8px 0}
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Kopi Flow ordering app">
+    <header>
+      <div class="brand">
+        <div class="logo">K</div>
+        <div>
+          <h1>Kopi Flow</h1>
+          <div class="hint">Tap to compose an order — share or copy when ready</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <button id="clearAll" title="Clear all orders" style="background:transparent;border:none;color:var(--accent);font-weight:700">Clear</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <label class="small">Name</label>
+      <input id="name" type="text" placeholder="Who is this for? (e.g., Ah Ma)" inputmode="text" />
+
+      <div style="height:8px"></div>
+
+      <label class="small">Drink</label>
+      <div id="drinkOptions" class="options" aria-label="Drink options">
+        <!-- populated by JS -->
+      </div>
+
+      <div style="height:8px"></div>
+
+      <label class="small">Sugar</label>
+      <div id="sugarOptions" class="options"></div>
+
+      <div style="height:8px"></div>
+
+      <label class="small">Extras</label>
+      <div id="extrasOptions" class="options"></div>
+
+      <div class="actions">
+        <button class="btn" id="addBtn">➕ Add to Cart</button>
+        <button class="btn secondary" id="previewBtn">👀 Large Preview</button>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>Order Cart</strong>
+        <span class="cart-meta" id="cartCount">0 items</span>
+      </div>
+
+      <ul id="cartList"></ul>
+
+      <div class="tools">
+        <button id="shareBtn">Share Order</button>
+        <button id="copyBtn">Copy Text</button>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="tools">
+        <button id="printBtn">Print (Browser)</button>
+        <button id="exportBtn">Export .txt</button>
+      </div>
+    </div>
+
+    <div class="hint card">
+      iOS notes: to add to home screen, tap Share → Add to Home Screen in Safari. Offline behavior limited on iOS Safari.
+    </div>
+  </div>
+
+  <!-- Large preview modal (simple) -->
+  <div id="previewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:12px;padding:18px;max-width:520px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.4)">
+      <div id="previewContent" style="font-size:18px;line-height:1.6;color:#1f1f1f"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button id="closePreview" style="padding:10px 12px;border-radius:8px">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  Mobile-friendly single-file PWA ordering app
+  - localStorage persistence
+  - big buttons for taps
+  - Web Share API + WhatsApp fallback
+  - Export / print support
+*/
+
+const DRINKS = ['Kopi','Kopi O','Kopi C','Teh','Teh O','Milo','Bandung'];
+const SUGARS = ['Kosong','Siew Dai','Gah Dai','Regular'];
+const EXTRAS = ['Peng','Gao','Po','Less Ice','No Ice'];
+
+const qs = (s) => document.querySelector(s);
+const qsa = (s) => Array.from(document.querySelectorAll(s));
+
+const drinkContainer = qs('#drinkOptions');
+const sugarContainer = qs('#sugarOptions');
+const extrasContainer = qs('#extrasOptions');
+
+let selected = {drink:'', sugar:'', extras:[]};
+let cart = [];
+
+/* build option buttons */
+function mkOption(text, container, onClick){
+  const btn = document.createElement('button');
+  btn.className='opt';
+  btn.type='button';
+  btn.textContent = text;
+  btn.addEventListener('click', ()=> onClick(btn, text));
+  container.appendChild(btn);
+  return btn;
+}
+
+DRINKS.forEach(d => mkOption(d, drinkContainer, (btn, text)=>{
+  // toggle single-select
+  qsa('#drinkOptions .opt').forEach(el=>el.classList.remove('active'));
+  btn.classList.add('active');
+  selected.drink = text;
+}));
+
+SUGARS.forEach(s => mkOption(s, sugarContainer, (btn, text)=>{
+  qsa('#sugarOptions .opt').forEach(el=>el.classList.remove('active'));
+  btn.classList.add('active');
+  selected.sugar = text;
+}));
+
+EXTRAS.forEach(e => mkOption(e, extrasContainer, (btn, text)=>{
+  // multi-select extras
+  btn.classList.toggle('active');
+  const idx = selected.extras.indexOf(text);
+  if(idx === -1) selected.extras.push(text); else selected.extras.splice(idx,1);
+}));
+
+/* load state from localStorage */
+function loadState(){
+  try{
+    const raw = localStorage.getItem('kopi_cart_v1');
+    if(raw) cart = JSON.parse(raw);
+    renderCart();
+  }catch(e){ console.warn(e) }
+}
+function saveState(){ localStorage.setItem('kopi_cart_v1', JSON.stringify(cart)); }
+
+function renderCart(){
+  const list = qs('#cartList');
+  list.innerHTML = '';
+  cart.forEach((item, i)=>{
+    const li = document.createElement('li');
+    const left = document.createElement('div');
+    left.innerHTML = `<strong>${escapeHtml(item.name)}</strong><div style="color:#6b554d;font-size:13px">${escapeHtml(item.order)}</div>`;
+    const right = document.createElement('div');
+    const del = document.createElement('button');
+    del.textContent='✕';
+    del.style.background='transparent';
+    del.style.border='none';
+    del.style.fontSize='16px';
+    del.style.color='#b44';
+    del.addEventListener('click', ()=>{
+      cart.splice(i,1);
+      saveState();
+      renderCart();
+    });
+    right.appendChild(del);
+    li.appendChild(left);
+    li.appendChild(right);
+    list.appendChild(li);
+  });
+  qs('#cartCount').textContent = `${cart.length} item${cart.length===1?'':'s'}`;
+}
+
+function addToCart(){
+  const name = qs('#name').value.trim();
+  if(!name) { alert('Please enter a name'); qs('#name').focus(); return; }
+  if(!selected.drink){ alert('Please choose a drink'); return; }
+  let parts = [selected.drink];
+  if(selected.sugar) parts.push(selected.sugar);
+  if(selected.extras.length) parts.push(selected.extras.join(' '));
+  const orderText = parts.join(' ');
+  cart.push({name, order: orderText});
+  saveState();
+  renderCart();
+  // clear selections but keep name
+  qsa('.opt.active').forEach(b=>b.classList.remove('active'));
+  selected = {drink:'', sugar:'', extras:[]};
+}
+
+function largePreview(){
+  if(cart.length===0){ alert('Cart is empty'); return; }
+  const lines = cart.map((c, i)=>`${i+1}. ${c.name} — ${c.order}`).join('\n');
+  qs('#previewContent').textContent = lines;
+  qs('#previewModal').style.display = 'flex';
+}
+
+function shareCart(){
+  if(cart.length===0){ alert('Cart empty'); return; }
+  const text = cart.map((c,i)=>`${i+1}. ${c.name} - ${c.order}`).join('\n');
+  // prefer Web Share API
+  if(navigator.share){
+    navigator.share({title:'Kopi Orders', text})
+      .catch(err=>{ /* user cancelled or unsupported target */ });
+  } else {
+    // fallback to WhatsApp url
+    const url = 'https://wa.me/?text='+encodeURIComponent(text);
+    window.open(url,'_blank');
+  }
+}
+
+function copyText(){
+  if(cart.length===0){ alert('Cart empty'); return; }
+  const text = cart.map((c,i)=>`${i+1}. ${c.name} - ${c.order}`).join('\n');
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(()=> alert('Copied to clipboard'));
+  } else {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); alert('Copied'); } catch(e){ alert('Copy failed'); }
+    ta.remove();
+  }
+}
+
+function printCart(){
+  const win = window.open('','_blank');
+  const html = `
+    <html><head><title>Kopi Orders</title>
+      <style>body{font-family:Arial;padding:20px;color:#222} li{margin:8px 0}</style>
+    </head><body>
+    <h2>Kopi Orders</h2><ol>
+    ${cart.map(c=>`<li><strong>${escapeHtml(c.name)}</strong> — ${escapeHtml(c.order)}</li>`).join('')}
+    </ol></body></html>`;
+  win.document.write(html);
+  win.document.close();
+  win.print();
+}
+
+function exportTxt(){
+  const text = cart.map((c,i)=>`${i+1}. ${c.name} - ${c.order}`).join('\n');
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'kopi-orders.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearAll(){
+  if(!confirm('Clear all orders?')) return;
+  cart = []; saveState(); renderCart();
+}
+
+/* small helper to prevent XSS when printing */
+function escapeHtml(s){
+  return (s+'').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+/* wire up buttons */
+qs('#addBtn').addEventListener('click', addToCart);
+qs('#previewBtn').addEventListener('click', largePreview);
+qs('#closePreview').addEventListener('click', ()=>qs('#previewModal').style.display='none');
+qs('#shareBtn').addEventListener('click', shareCart);
+qs('#copyBtn').addEventListener('click', copyText);
+qs('#printBtn').addEventListener('click', printCart);
+qs('#clearAll').addEventListener('click', clearAll);
+qs('#exportBtn').addEventListener('click', exportTxt);
+
+/* register service worker for PWA offline caching (best-effort) */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{/*sw failed*/});
+  });
+}
+
+loadState();
+</script>
+</body>
+</html>
